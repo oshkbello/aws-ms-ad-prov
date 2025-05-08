@@ -1,0 +1,36 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Provisions an AWS Managed Microsoft AD directory in the specified subnets
+
+Parameters:
+  BusinessId:
+    Type: String
+    Description: Unique business identifier
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+  DirectorySubnetA:
+    Type: AWS::EC2::Subnet::Id
+  DirectorySubnetB:
+    Type: AWS::EC2::Subnet::Id
+
+Resources:
+  ManagedMicrosoftDirectory:
+    Type: AWS::DirectoryService::MicrosoftAD
+    Properties:
+      Name: !Sub "ad-${BusinessId}.cloud-desktop.internal"
+      Password: !Sub "{{resolve:secretsmanager:cloud-desktop/biz-${BusinessId}/directoryAdminPassword:SecretString}}"
+      Edition: Standard
+      VpcSettings:
+        VpcId: !Ref VpcId
+        SubnetIds:
+          - !Ref DirectorySubnetA
+          - !Ref DirectorySubnetB
+      EnableSso: false
+      ShortName: !Sub "ad${BusinessId}"
+
+Outputs:
+  DirectoryId:
+    Description: The ID of the created Microsoft AD directory
+    Value: !Ref ManagedMicrosoftDirectory
+  DNSIpAddresses:
+    Description: The DNS IP addresses of the directory
+    Value: !Join [",", !GetAtt ManagedMicrosoftDirectory.DnsIpAddresses]
